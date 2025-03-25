@@ -1,9 +1,9 @@
-from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QStackedWidget
+from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QStackedWidget, QSpacerItem, QSizePolicy
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 from groupcreate import GroupCreateWindow
 from groupjoin import GroupJoinWindow
-from groupslist import GroupsListWindow  # Импортируем новое окно для списка групп
+
 
 class GroupTaskerApp(QWidget):
     def __init__(self):
@@ -21,12 +21,14 @@ class GroupTaskerApp(QWidget):
         self.main_page = QWidget()
         self.main_layout = QVBoxLayout(self.main_page)
         self.main_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.main_layout.setSpacing(40)
 
         title = QLabel("GroupTasker")
         title.setFont(QFont("Inter", 64))
         title.setStyleSheet("color: #5F7470;")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Добавляем небольшое пространство сверху
+        self.main_layout.addItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
         self.main_layout.addWidget(title)
 
         button_style = (
@@ -36,7 +38,7 @@ class GroupTaskerApp(QWidget):
             "font-size: 32px; font-weight: normal;"
             "color: #003C30;"
             "width: 500px;"
-            "height: 100px;"
+            "height: 175px;"
             "}"
             "QPushButton:hover { background-color: #C2C4B8; }"
         )
@@ -44,20 +46,25 @@ class GroupTaskerApp(QWidget):
         btn_create = QPushButton("Создать группу")
         btn_create.setFont(QFont("Inter", 32))
         btn_create.setStyleSheet(button_style)
+        btn_create.setFixedSize(500, 175)
         btn_create.clicked.connect(self.create_group_window)
-        self.main_layout.addWidget(btn_create)
 
         btn_join = QPushButton("Войти в группу (код группы)")
         btn_join.setFont(QFont("Inter", 32))
         btn_join.setStyleSheet(button_style)
+        btn_join.setFixedSize(500, 175)
         btn_join.clicked.connect(self.join_group_window)
-        self.main_layout.addWidget(btn_join)
 
-        btn_my_groups = QPushButton("Мои группы")
-        btn_my_groups.setFont(QFont("Inter", 32))
-        btn_my_groups.setStyleSheet(button_style)
-        btn_my_groups.clicked.connect(self.my_groups_window)  # Открытие окна с группами
-        self.main_layout.addWidget(btn_my_groups)
+        # Немного уменьшаем расстояние между заголовком и кнопками
+        self.main_layout.addItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))
+        self.main_layout.addWidget(btn_create, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Оставляем увеличенный отступ между кнопками
+        self.main_layout.addItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))
+        self.main_layout.addWidget(btn_join, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Добавляем пространство снизу
+        self.main_layout.addItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 
         self.stacked_widget.addWidget(self.main_page)
 
@@ -77,11 +84,7 @@ class GroupTaskerApp(QWidget):
         self.stacked_widget.addWidget(group_join_window)
         self.stacked_widget.setCurrentWidget(group_join_window)
 
-    def my_groups_window(self):
-        """Открывает окно с группами пользователя."""
-        groups_list_window = GroupsListWindow(self.stacked_widget)
-        self.stacked_widget.addWidget(groups_list_window)
-        self.stacked_widget.setCurrentWidget(groups_list_window)
+
 if __name__ == "__main__":
     app = QApplication([])
     window = GroupTaskerApp()

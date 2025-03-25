@@ -1,12 +1,13 @@
 from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QMessageBox
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
-from database import add_user_to_group, check_group_exists
+from database import check_group_exists, check_user_exists, add_user_to_group
+
 
 class GroupJoinWindow(QWidget):
     def __init__(self, stacked_widget):
         super().__init__()
-        self.stacked_widget = stacked_widget
+        self.stacked_widget = stacked_widget  # Сохраняем ссылку на QStackedWidget
         self.init_ui()
 
     def init_ui(self):
@@ -16,6 +17,7 @@ class GroupJoinWindow(QWidget):
 
         main_layout = QVBoxLayout(self)
 
+        # Верхняя панель с кнопкой "Back"
         header_layout = QHBoxLayout()
         back_label = QLabel("Back")
         back_label.setFont(QFont("Inter", 44))
@@ -34,6 +36,7 @@ class GroupJoinWindow(QWidget):
         main_layout.addLayout(header_layout)
         main_layout.addSpacing(30)
 
+        # Поля ввода
         def create_input_field(label_text):
             label = QLabel(label_text)
             label.setFont(QFont("Inter", 30))
@@ -74,10 +77,12 @@ class GroupJoinWindow(QWidget):
         main_layout.addWidget(btn_join, alignment=Qt.AlignmentFlag.AlignCenter)
 
     def on_back_click(self, event):
+        """Возвращает на главное окно."""
         self.stacked_widget.setCurrentIndex(0)
         self.close()
 
     def join_group(self):
+        """Проверяет код группы и наличие пользователя."""
         group_code = self.group_code_input.text().strip()
         user_name = self.user_name_input.text().strip()
         password = self.password_input.text().strip()
@@ -86,13 +91,15 @@ class GroupJoinWindow(QWidget):
             QMessageBox.warning(self, "Ошибка", "Необходимо заполнить все поля!")
             return
 
-        # Проверяем, существует ли группа с таким кодом
         if not check_group_exists(group_code):
-            QMessageBox.warning(self, "Ошибка", "Код группы неверный!")
+            QMessageBox.warning(self, "Ошибка", "Код группы введён неверно")
             return
 
-        success = add_user_to_group(user_name, password, group_code)
-        if success:
-            QMessageBox.information(self, "Успех", f"Вы присоединились к группе!")
+        if check_user_exists(user_name, password, group_code):
+            QMessageBox.information(self, "Успех", "Вы успешно вошли в группу")
         else:
-            QMessageBox.warning(self, "Ошибка", "Не удалось присоединиться к группе.")
+            add_user_to_group(user_name, password, group_code)
+            QMessageBox.information(self, "Успех", "Профиль успешно создан и вы вошли в группу")
+
+        self.stacked_widget.setCurrentIndex(2)  # Переход в окно группы
+        self.close()

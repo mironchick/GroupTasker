@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt
 import random
 import pyperclip
 from database import create_group
+from main_window import MainWindow
 
 
 class GroupCreateWindow(QWidget):
@@ -97,6 +98,12 @@ class GroupCreateWindow(QWidget):
             if group_id:
                 pyperclip.copy(group_code)
                 QMessageBox.information(self, "Группа создана", f"Код группы: {group_code} (скопирован)")
+
+                # Открываем главное окно
+                main_window = MainWindow(self.stacked_widget, user_name)
+                self.stacked_widget.addWidget(main_window)
+                self.stacked_widget.setCurrentWidget(main_window)
+
             else:
                 QMessageBox.warning(self, "Ошибка", "Не удалось создать группу. Попробуйте снова.")
         except Exception as e:
