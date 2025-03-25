@@ -1,0 +1,89 @@
+from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QListWidget, QFrame
+from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt
+from note_board import NoteBoard  # Импортируем класс доски заметок
+
+
+class MainWindow(QWidget):
+    def __init__(self, stacked_widget, user_name):
+        super().__init__()
+        self.stacked_widget = stacked_widget
+        self.user_name = user_name  # Имя пользователя
+
+        self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle("GroupTasker - Главное окно")
+        self.setGeometry(100, 100, 1440, 1080)
+        self.setStyleSheet("background-color: #F0F0F0;")
+
+        main_layout = QVBoxLayout(self)
+
+        # Верхняя панель
+        header_layout = QHBoxLayout()
+
+        btn_back = QLabel("Back")
+        btn_back.setFont(QFont("Inter", 48))
+        btn_back.setStyleSheet("color: #5F7470;")
+        btn_back.mousePressEvent = self.on_back_click  # Назначаем обработчик
+
+        lbl_username = QLabel(self.user_name)
+        lbl_username.setFont(QFont("Inter", 48))
+        lbl_username.setStyleSheet("color: #5F7470;")
+        lbl_username.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        lbl_appname = QLabel("GroupTasker")
+        lbl_appname.setFont(QFont("Inter", 48))
+        lbl_appname.setStyleSheet("color: #5F7470;")
+        lbl_appname.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+        header_layout.addWidget(btn_back)
+        header_layout.addStretch()
+        header_layout.addWidget(lbl_username, alignment=Qt.AlignmentFlag.AlignCenter)
+        header_layout.addStretch()
+        header_layout.addWidget(lbl_appname)
+
+        main_layout.addLayout(header_layout)
+
+        # Центральная часть
+        content_layout = QHBoxLayout()
+
+        # Боковое меню
+        menu_frame = QFrame()
+        menu_frame.setFixedSize(250, 900)
+        menu_frame.setStyleSheet("background-color: #E0E2DB; border-radius: 15px;")
+
+        menu_layout = QVBoxLayout(menu_frame)
+
+        def create_menu_button(text):
+            btn = QPushButton(text)
+            btn.setFont(QFont("Inter", 32))
+            btn.setStyleSheet(
+                "QPushButton { color: #003C30; background-color: transparent; border: none; }"
+                "QPushButton:hover { font-weight: bold; }"
+            )
+            return btn
+
+        btn_group = create_menu_button("Группа")
+        btn_tasks = create_menu_button("Мои задачи")
+        btn_chat = create_menu_button("Общий чат")
+        btn_messages = create_menu_button("Личные сообщения")
+
+        menu_layout.addWidget(btn_group)
+        menu_layout.addWidget(btn_tasks)
+        menu_layout.addWidget(btn_chat)
+        menu_layout.addWidget(btn_messages)
+        menu_layout.addStretch()
+
+        content_layout.addWidget(menu_frame)
+
+        # Доска заметок
+        self.note_board = NoteBoard()
+        content_layout.addWidget(self.note_board)
+
+        main_layout.addLayout(content_layout)
+
+    def on_back_click(self, event):
+        """Возвращает в главное меню."""
+        self.stacked_widget.setCurrentIndex(0)
+        self.close()
