@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 from database import check_group_exists, check_user_exists, add_user_to_group
-
+from main_window import MainWindow
 
 class GroupJoinWindow(QWidget):
     def __init__(self, stacked_widget):
@@ -82,7 +82,7 @@ class GroupJoinWindow(QWidget):
         self.close()
 
     def join_group(self):
-        """Проверяет код группы и наличие пользователя."""
+        """Проверяет код группы и наличие пользователя, затем открывает главное окно."""
         group_code = self.group_code_input.text().strip()
         user_name = self.user_name_input.text().strip()
         password = self.password_input.text().strip()
@@ -95,11 +95,17 @@ class GroupJoinWindow(QWidget):
             QMessageBox.warning(self, "Ошибка", "Код группы введён неверно")
             return
 
-        if check_user_exists(user_name, password, group_code):
-            QMessageBox.information(self, "Успех", "Вы успешно вошли в группу")
-        else:
+        if not check_user_exists(user_name, password, group_code):
             add_user_to_group(user_name, password, group_code)
-            QMessageBox.information(self, "Успех", "Профиль успешно создан и вы вошли в группу")
+
+        QMessageBox.information(self, "Успех", "Вы успешно вошли в группу")
+
+        # Создаём главное окно и добавляем его в QStackedWidget
+        self.main_window = MainWindow(self.stacked_widget, user_name)
+        self.stacked_widget.addWidget(self.main_window)
+
+        # Переключаемся на главное окно
+        self.stacked_widget.setCurrentWidget(self.main_window)
 
         self.stacked_widget.setCurrentIndex(2)  # Переход в окно группы
         self.close()
