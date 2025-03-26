@@ -99,8 +99,8 @@ class GroupCreateWindow(QWidget):
                 pyperclip.copy(group_code)
                 QMessageBox.information(self, "Группа создана", f"Код группы: {group_code} (скопирован)")
 
-                # Открываем главное окно
-                main_window = MainWindow(self.stacked_widget, user_name)
+                # Открываем главное окно с передачей кода группы
+                main_window = MainWindow(self.stacked_widget, user_name, group_code)
                 self.stacked_widget.addWidget(main_window)
                 self.stacked_widget.setCurrentWidget(main_window)
 

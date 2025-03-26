@@ -1,14 +1,15 @@
 from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QListWidget, QFrame
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
-from note_board import NoteBoard  # Импортируем класс доски заметок
+from note_board import NoteBoard
 
 
 class MainWindow(QWidget):
-    def __init__(self, stacked_widget, user_name):
+    def __init__(self, stacked_widget, user_name, group_code):
         super().__init__()
         self.stacked_widget = stacked_widget
-        self.user_name = user_name  # Имя пользователя
+        self.user_name = user_name
+        self.group_code = group_code
 
         self.init_ui()
 
@@ -25,7 +26,7 @@ class MainWindow(QWidget):
         btn_back = QLabel("Back")
         btn_back.setFont(QFont("Inter", 48))
         btn_back.setStyleSheet("color: #5F7470;")
-        btn_back.mousePressEvent = self.on_back_click  # Назначаем обработчик
+        btn_back.mousePressEvent = self.on_back_click
 
         lbl_username = QLabel(self.user_name)
         lbl_username.setFont(QFont("Inter", 48))
@@ -51,17 +52,31 @@ class MainWindow(QWidget):
         # Боковое меню
         menu_frame = QFrame()
         menu_frame.setFixedSize(250, 900)
-        menu_frame.setStyleSheet("background-color: #E0E2DB; border-radius: 15px;")
+        menu_frame.setStyleSheet("""
+            background-color: #E0E2DB; 
+            border-radius: 15px;
+        """)
 
         menu_layout = QVBoxLayout(menu_frame)
+        menu_layout.setContentsMargins(20, 20, 20, 20)
 
         def create_menu_button(text):
             btn = QPushButton(text)
             btn.setFont(QFont("Inter", 32))
-            btn.setStyleSheet(
-                "QPushButton { color: #003C30; background-color: transparent; border: none; }"
-                "QPushButton:hover { font-weight: bold; }"
-            )
+            btn.setStyleSheet("""
+                QPushButton { 
+                    color: #003C30; 
+                    background-color: transparent; 
+                    border: none; 
+                    text-align: left;
+                    padding: 10px;
+                }
+                QPushButton:hover { 
+                    font-weight: bold; 
+                    background-color: #D2D4C8;
+                    border-radius: 10px;
+                }
+            """)
             return btn
 
         btn_group = create_menu_button("Группа")
@@ -78,7 +93,7 @@ class MainWindow(QWidget):
         content_layout.addWidget(menu_frame)
 
         # Доска заметок
-        self.note_board = NoteBoard()
+        self.note_board = NoteBoard(self.group_code)
         content_layout.addWidget(self.note_board)
 
         main_layout.addLayout(content_layout)

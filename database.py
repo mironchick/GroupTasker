@@ -39,7 +39,7 @@ def check_group_exists(group_code):
         with conn.cursor(cursor_factory=DictCursor) as cursor:
             cursor.execute("SELECT id FROM groups WHERE code = %s;", (group_code,))
             group = cursor.fetchone()
-            return group is not None  # True, если группа существует, иначе False
+            return group is not None
 
 
 def check_user_exists(name, password, group_code):
@@ -52,7 +52,7 @@ def check_user_exists(name, password, group_code):
                 WHERE u.name = %s AND u.password = %s AND g.code = %s;
             """, (name, password, group_code))
             user = cursor.fetchone()
-            return user is not None  # True, если пользователь найден, иначе False
+            return user is not None
 
 
 def add_user_to_group(name, password, group_code):
@@ -64,10 +64,46 @@ def add_user_to_group(name, password, group_code):
             group = cursor.fetchone()
 
             if not group:
-                return None  # Группа не найдена
+                return None
 
             group_id = group["id"]
             cursor.execute("INSERT INTO users (name, password, group_id) VALUES (%s, %s, %s);",
                            (name, password, group_id))
             conn.commit()
             return True
+
+
+def save_note(group_code, text):
+    """Сохраняет заметку в базу данных."""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            # Получаем ID группы по коду
+            cursor.execute("SELECT id FROM groups WHERE code = %s;", (group_code,))
+            group_id = cursor.fetchone()[0]
+
+            cursor.execute("INSERT INTO notes (group_id, text) VALUES (%s, %s);",
+                           (group_id, text))
+            conn.commit()
+            return True
+
+
+def get_notes(group_code):
+    """Получает все заметки для группы."""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("""
+                SELECT n.text FROM notes n
+                JOIN groups g ON n.group_id = g.id
+                WHERE g.code = %s
+                ORDER BY n.created_at DESC;
+            """, (group_code,))
+            return [note['text'] for note in cursor.fetchall()]
+
+
+def get_group_code(group_id):
+    """Получает код группы по ID."""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("SELECT code FROM groups WHERE id = %s;", (group_id,))
+            group = cursor.fetchone()
+            return group['code'] if group else None
