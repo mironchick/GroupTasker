@@ -104,18 +104,45 @@ class NoteBoard(QFrame):
 
     def add_note(self):
         """Добавляет заметку на доску и сохраняет в базу данных."""
-        text, ok = QInputDialog.getMultiLineText(
-            self,
-            "Новая заметка",
-            "Введите текст заметки:",
-            ""
-        )
+        dialog = QInputDialog(self)
+        dialog.setWindowTitle("Новая заметка")
+        dialog.setLabelText("Введите текст заметки:")
+        dialog.setStyleSheet("""
+            QInputDialog {
+                background-color: #E0E2DB;
+            }
+            QLabel {
+                color: #003C30;
+                font-size: 20px;
+            }
+            QTextEdit {
+                background-color: white;
+                color: #003C30;
+                font-size: 18px;
+                border: 1px solid #5F7470;
+                border-radius: 5px;
+            }
+            QPushButton {
+                background-color: #5F7470;
+                color: white;
+                border-radius: 5px;
+                padding: 5px 10px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background-color: #4D615E;
+            }
+        """)
+        dialog.setInputMode(QInputDialog.InputMode.TextInput)
+        dialog.setOption(QInputDialog.InputDialogOption.UsePlainTextEditForTextInput)
 
-        if ok and text.strip():
-            # Сохраняем в базу данных и получаем ID заметки
-            note_id = save_note(self.group_code, text)
-            # Добавляем на доску
-            self.add_note_to_board(note_id, text)
+        if dialog.exec() == QInputDialog.DialogCode.Accepted:
+            text = dialog.textValue()
+            if text.strip():
+                # Сохраняем в базу данных и получаем ID заметки
+                note_id = save_note(self.group_code, text)
+                # Добавляем на доску
+                self.add_note_to_board(note_id, text)
 
     def remove_note(self, note_id):
         """Удаляет заметку из базы данных и обновляет доску."""
