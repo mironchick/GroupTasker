@@ -62,7 +62,7 @@ class MainWindow(QWidget):
 
         def create_menu_button(text):
             btn = QPushButton(text)
-            btn.setFont(QFont("Inter", 32))
+            btn.setFont(QFont("Inter", 24))
             btn.setStyleSheet("""
                 QPushButton { 
                     color: #003C30; 
