@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (QWidget, QLabel, QPushButton, QVBoxLayout,
                              QHBoxLayout, QFrame, QInputDialog, QScrollArea)
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
-from database import save_note, get_notes
+from database import save_note, get_notes, delete_note
 
 
 class NoteBoard(QFrame):
@@ -55,12 +55,18 @@ class NoteBoard(QFrame):
 
     def load_notes(self):
         """Загружает заметки из базы данных."""
-        notes = get_notes(self.group_code)
-        for text in notes:
-            self.add_note_to_board(text)
+        # Очищаем существующие заметки перед загрузкой новых
+        for i in reversed(range(self.notes_layout.count())):
+            widget = self.notes_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
 
-    def add_note_to_board(self, text):
-        """Добавляет заметку на доску (без сохранения в БД)."""
+        notes = get_notes(self.group_code)
+        for note_id, text in notes:
+            self.add_note_to_board(note_id, text)
+
+    def add_note_to_board(self, note_id, text):
+        """Добавляет заметку на доску."""
         note_frame = QFrame()
         note_frame.setStyleSheet("""
             background-color: #E0E2DB;
@@ -69,7 +75,7 @@ class NoteBoard(QFrame):
         """)
         note_frame.setFixedWidth(950)
 
-        note_layout = QVBoxLayout(note_frame)
+        note_layout = QHBoxLayout(note_frame)
 
         note_text = QLabel(text)
         note_text.setFont(QFont("Inter", 20))
@@ -77,7 +83,23 @@ class NoteBoard(QFrame):
         note_text.setWordWrap(True)
         note_text.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
+        btn_delete = QPushButton("❌")
+        btn_delete.setStyleSheet("""
+            QPushButton {
+                background-color: #FF6961;
+                color: white;
+                border-radius: 5px;
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: #D9534F;
+            }
+        """)
+        btn_delete.setFixedSize(40, 40)
+        btn_delete.clicked.connect(lambda: self.remove_note(note_id))
+
         note_layout.addWidget(note_text)
+        note_layout.addWidget(btn_delete)
         self.notes_layout.addWidget(note_frame)
 
     def add_note(self):
@@ -90,7 +112,12 @@ class NoteBoard(QFrame):
         )
 
         if ok and text.strip():
-            # Сохраняем в базу данных
-            save_note(self.group_code, text)
+            # Сохраняем в базу данных и получаем ID заметки
+            note_id = save_note(self.group_code, text)
             # Добавляем на доску
-            self.add_note_to_board(text)
+            self.add_note_to_board(note_id, text)
+
+    def remove_note(self, note_id):
+        """Удаляет заметку из базы данных и обновляет доску."""
+        delete_note(note_id)
+        self.load_notes()

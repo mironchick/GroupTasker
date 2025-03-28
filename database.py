@@ -74,17 +74,18 @@ def add_user_to_group(name, password, group_code):
 
 
 def save_note(group_code, text):
-    """Сохраняет заметку в базу данных."""
+    """Сохраняет заметку в базу данных и возвращает её ID."""
     with get_connection() as conn:
         with conn.cursor() as cursor:
             # Получаем ID группы по коду
             cursor.execute("SELECT id FROM groups WHERE code = %s;", (group_code,))
             group_id = cursor.fetchone()[0]
 
-            cursor.execute("INSERT INTO notes (group_id, text) VALUES (%s, %s);",
+            cursor.execute("INSERT INTO notes (group_id, text) VALUES (%s, %s) RETURNING id;",
                            (group_id, text))
+            note_id = cursor.fetchone()[0]
             conn.commit()
-            return True
+            return note_id
 
 
 def get_notes(group_code):
@@ -92,12 +93,20 @@ def get_notes(group_code):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cursor:
             cursor.execute("""
-                SELECT n.text FROM notes n
+                SELECT n.id, n.text FROM notes n
                 JOIN groups g ON n.group_id = g.id
                 WHERE g.code = %s
                 ORDER BY n.created_at DESC;
             """, (group_code,))
-            return [note['text'] for note in cursor.fetchall()]
+            return [(note['id'], note['text']) for note in cursor.fetchall()]
+
+
+def delete_note(note_id):
+    """Удаляет заметку по ID."""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM notes WHERE id = %s;", (note_id,))
+            conn.commit()
 
 
 def get_group_code(group_id):
