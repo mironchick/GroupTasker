@@ -62,10 +62,10 @@ class NoteBoard(QFrame):
                 widget.deleteLater()
 
         notes = get_notes(self.group_code)
-        for note_id, text in notes:
-            self.add_note_to_board(note_id, text)
+        for note_id, text, user_name in notes:
+            self.add_note_to_board(note_id, text, user_name)
 
-    def add_note_to_board(self, note_id, text):
+    def add_note_to_board(self, note_id, text, user_name):
         """Добавляет заметку на доску."""
         note_frame = QFrame()
         note_frame.setStyleSheet("""
@@ -75,13 +75,24 @@ class NoteBoard(QFrame):
         """)
         note_frame.setFixedWidth(950)
 
-        note_layout = QHBoxLayout(note_frame)
+        note_layout = QVBoxLayout(note_frame)  # Изменено на вертикальный layout
 
+        # Основной текст заметки
         note_text = QLabel(text)
         note_text.setFont(QFont("Inter", 20))
         note_text.setStyleSheet("color: #003C30;")
         note_text.setWordWrap(True)
         note_text.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        # Имя пользователя (мелким текстом)
+        user_label = QLabel(f"Автор: {user_name}")
+        user_label.setFont(QFont("Inter", 12))
+        user_label.setStyleSheet("color: #5F7470; font-style: italic;")
+        user_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+        # Горизонтальный layout для текста и кнопки удаления
+        text_button_layout = QHBoxLayout()
+        text_button_layout.addWidget(note_text)
 
         btn_delete = QPushButton("❌")
         btn_delete.setStyleSheet("""
@@ -98,8 +109,10 @@ class NoteBoard(QFrame):
         btn_delete.setFixedSize(40, 40)
         btn_delete.clicked.connect(lambda: self.remove_note(note_id))
 
-        note_layout.addWidget(note_text)
-        note_layout.addWidget(btn_delete)
+        text_button_layout.addWidget(btn_delete)
+
+        note_layout.addLayout(text_button_layout)
+        note_layout.addWidget(user_label)
         self.notes_layout.addWidget(note_frame)
 
     def add_note(self):
@@ -140,9 +153,10 @@ class NoteBoard(QFrame):
             text = dialog.textValue()
             if text.strip():
                 # Сохраняем в базу данных и получаем ID заметки
-                note_id = save_note(self.group_code, text)
+                note_id = save_note(self.group_code, text,
+                                    self.parent().user_name)  # Получаем имя пользователя из родительского окна
                 # Добавляем на доску
-                self.add_note_to_board(note_id, text)
+                self.add_note_to_board(note_id, text, self.parent().user_name)
 
     def remove_note(self, note_id):
         """Удаляет заметку из базы данных и обновляет доску."""
