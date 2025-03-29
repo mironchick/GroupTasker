@@ -1,7 +1,8 @@
-from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QListWidget, QFrame
+from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QListWidget, QFrame, QStackedWidget
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 from note_board import NoteBoard
+from group_view import GroupView  # Добавлен новый импорт
 
 
 class MainWindow(QWidget):
@@ -84,6 +85,24 @@ class MainWindow(QWidget):
         btn_chat = create_menu_button("Общий чат")
         btn_messages = create_menu_button("Личные сообщения")
 
+        # Создаем stacked widget для переключения между GroupView и NoteBoard
+        self.content_stack = QStackedWidget()
+
+        # Создаем оба виджета
+        self.note_board = NoteBoard(self.group_code)
+        self.group_view = GroupView(self.group_code, self)  # Передаем self как main_window
+
+        # Добавляем их в stacked widget
+        self.content_stack.addWidget(self.group_view)
+        self.content_stack.addWidget(self.note_board)
+
+        # По умолчанию показываем NoteBoard
+        self.content_stack.setCurrentIndex(1)
+
+        # Подключаем кнопки меню
+        btn_group.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))
+        btn_tasks.clicked.connect(lambda: self.content_stack.setCurrentIndex(1))
+
         menu_layout.addWidget(btn_group)
         menu_layout.addWidget(btn_tasks)
         menu_layout.addWidget(btn_chat)
@@ -91,10 +110,7 @@ class MainWindow(QWidget):
         menu_layout.addStretch()
 
         content_layout.addWidget(menu_frame)
-
-        # Доска заметок
-        self.note_board = NoteBoard(self.group_code)
-        content_layout.addWidget(self.note_board)
+        content_layout.addWidget(self.content_stack)
 
         main_layout.addLayout(content_layout)
 
