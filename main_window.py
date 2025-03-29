@@ -89,7 +89,7 @@ class MainWindow(QWidget):
         self.content_stack = QStackedWidget()
 
         # Создаем оба виджета
-        self.note_board = NoteBoard(self.group_code)
+        self.note_board = NoteBoard(self.group_code, self.user_name)
         self.group_view = GroupView(self.group_code, self)  # Передаем self как main_window
 
         # Добавляем их в stacked widget

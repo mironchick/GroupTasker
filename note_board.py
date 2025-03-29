@@ -6,9 +6,10 @@ from database import save_note, get_notes, delete_note
 
 
 class NoteBoard(QFrame):
-    def __init__(self, group_code):
+    def __init__(self, group_code, user_name=None):  # Добавляем параметр user_name
         super().__init__()
         self.group_code = group_code
+        self.user_name = user_name  # Сохраняем имя пользователя
         self.setFixedSize(1000, 900)
         self.setStyleSheet("""
             border: 2px solid #5F7470; 
@@ -117,6 +118,10 @@ class NoteBoard(QFrame):
 
     def add_note(self):
         """Добавляет заметку на доску и сохраняет в базу данных."""
+        if not self.user_name:  # Проверяем, есть ли имя пользователя
+            print("Ошибка: имя пользователя не установлено")
+            return
+
         dialog = QInputDialog(self)
         dialog.setWindowTitle("Новая заметка")
         dialog.setLabelText("Введите текст заметки:")
@@ -153,10 +158,9 @@ class NoteBoard(QFrame):
             text = dialog.textValue()
             if text.strip():
                 # Сохраняем в базу данных и получаем ID заметки
-                note_id = save_note(self.group_code, text,
-                                    self.parent().user_name)  # Получаем имя пользователя из родительского окна
+                note_id = save_note(self.group_code, text, self.user_name)
                 # Добавляем на доску
-                self.add_note_to_board(note_id, text, self.parent().user_name)
+                self.add_note_to_board(note_id, text, self.user_name)
 
     def remove_note(self, note_id):
         """Удаляет заметку из базы данных и обновляет доску."""
