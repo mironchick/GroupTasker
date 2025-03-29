@@ -116,3 +116,11 @@ def get_group_code(group_id):
             cursor.execute("SELECT code FROM groups WHERE id = %s;", (group_id,))
             group = cursor.fetchone()
             return group['code'] if group else None
+
+
+def delete_group(group_code):
+    """Удаляет группу по коду."""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM groups WHERE code = %s;", (group_code,))
+            conn.commit()

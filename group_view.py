@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import (QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame,
-                             QScrollArea, QListWidget, QListWidgetItem, QPushButton)
+                             QScrollArea, QListWidget, QListWidgetItem, QPushButton,
+                             QMessageBox)
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 import psycopg2
@@ -103,6 +104,52 @@ class GroupView(QFrame):
         self.members_list.setFont(QFont("Inter", 18))
         main_layout.addWidget(self.members_list)
 
+        # Кнопка удаления участника
+        self.btn_remove_member = QPushButton("Исключить участника")
+        self.btn_remove_member.setFixedHeight(60)
+        self.btn_remove_member.setStyleSheet("""
+            QPushButton {
+                background-color: #E0E2DB;
+                border-radius: 15px;
+                padding: 10px;
+                font-size: 20px;
+                color: #003C30;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #D2D4C8;
+            }
+            QPushButton:disabled {
+                color: #5F7470;
+            }
+        """)
+        self.btn_remove_member.setFont(QFont("Inter", 20))
+        self.btn_remove_member.clicked.connect(self.remove_member)
+        main_layout.addWidget(self.btn_remove_member)
+
+        # Кнопка удаления группы
+        self.btn_delete_group = QPushButton("Удалить группу")
+        self.btn_delete_group.setFixedHeight(60)
+        self.btn_delete_group.setStyleSheet("""
+            QPushButton {
+                background-color: #FF6961;
+                border-radius: 15px;
+                padding: 10px;
+                font-size: 20px;
+                color: white;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #D9534F;
+            }
+            QPushButton:disabled {
+                background-color: #5F7470;
+            }
+        """)
+        self.btn_delete_group.setFont(QFont("Inter", 20))
+        self.btn_delete_group.clicked.connect(self.delete_group)
+        main_layout.addWidget(self.btn_delete_group)
+
         # Загружаем данные группы
         self.load_group_data()
 
@@ -120,11 +167,23 @@ class GroupView(QFrame):
                 host="localhost"
             )
             with conn.cursor(cursor_factory=DictCursor) as cursor:
-                # Получаем название группы
-                cursor.execute("SELECT name FROM groups WHERE code = %s;", (self.group_code,))
-                group = cursor.fetchone()
-                if group:
-                    self.group_name_label.setText(group['name'])
+                # Получаем название группы и создателя
+                cursor.execute("""
+                    SELECT g.name, u.name as creator 
+                    FROM groups g
+                    JOIN users u ON g.id = u.group_id
+                    WHERE g.code = %s
+                    ORDER BY u.id LIMIT 1;
+                """, (self.group_code,))
+                group_info = cursor.fetchone()
+
+                if group_info:
+                    self.group_name_label.setText(group_info['name'])
+                    self.is_creator = (group_info['creator'] == self.main_window.user_name)
+
+                    # Активируем кнопки только для создателя группы
+                    self.btn_remove_member.setEnabled(self.is_creator)
+                    self.btn_delete_group.setEnabled(self.is_creator)
 
                 # Получаем список участников
                 cursor.execute("""
@@ -144,3 +203,82 @@ class GroupView(QFrame):
         finally:
             if conn:
                 conn.close()
+
+    def remove_member(self):
+        """Удаляет выбранного участника из группы."""
+        selected_items = self.members_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "Ошибка", "Выберите участника для исключения")
+            return
+
+        member_name = selected_items[0].text()
+        if member_name == self.main_window.user_name:
+            QMessageBox.warning(self, "Ошибка", "Вы не можете исключить себя")
+            return
+
+        reply = QMessageBox.question(
+            self, 'Подтверждение',
+            f'Вы уверены, что хотите исключить участника {member_name}?',
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                conn = psycopg2.connect(
+                    dbname="grouptasker",
+                    user="postgres",
+                    password="123456",
+                    host="localhost"
+                )
+                with conn.cursor() as cursor:
+                    # Удаляем участника
+                    cursor.execute("""
+                        DELETE FROM users 
+                        WHERE name = %s AND group_id = (
+                            SELECT id FROM groups WHERE code = %s
+                        );
+                    """, (member_name, self.group_code))
+                    conn.commit()
+
+                    # Обновляем список участников
+                    self.load_group_data()
+
+                    QMessageBox.information(self, "Успех", f"Участник {member_name} исключен")
+
+            except Exception as e:
+                QMessageBox.critical(self, "Ошибка", f"Не удалось исключить участника: {str(e)}")
+            finally:
+                if conn:
+                    conn.close()
+
+    def delete_group(self):
+        """Удаляет группу полностью."""
+        reply = QMessageBox.question(
+            self, 'Подтверждение',
+            'Вы уверены, что хотите удалить группу? Это действие нельзя отменить!',
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                conn = psycopg2.connect(
+                    dbname="grouptasker",
+                    user="postgres",
+                    password="123456",
+                    host="localhost"
+                )
+                with conn.cursor() as cursor:
+                    # Удаляем группу (каскадное удаление удалит всех пользователей и заметки)
+                    cursor.execute("DELETE FROM groups WHERE code = %s;", (self.group_code,))
+                    conn.commit()
+
+                    QMessageBox.information(self, "Успех", "Группа удалена")
+                    self.main_window.on_back_click(None)  # Возвращаемся в главное меню
+
+            except Exception as e:
+                QMessageBox.critical(self, "Ошибка", f"Не удалось удалить группу: {str(e)}")
+            finally:
+                if conn:
+                    conn.close()
