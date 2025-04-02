@@ -124,3 +124,42 @@ def delete_group(group_code):
         with conn.cursor() as cursor:
             cursor.execute("DELETE FROM groups WHERE code = %s;", (group_code,))
             conn.commit()
+
+
+def save_task(group_code, title, description, deadline, user_name):
+    """Сохраняет задачу в базу данных и возвращает её ID."""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            # Получаем ID группы по коду
+            cursor.execute("SELECT id FROM groups WHERE code = %s;", (group_code,))
+            group_id = cursor.fetchone()[0]
+
+            cursor.execute("""
+                INSERT INTO tasks (group_id, title, description, deadline, user_name) 
+                VALUES (%s, %s, %s, %s, %s) RETURNING id;
+            """, (group_id, title, description, deadline, user_name))
+            task_id = cursor.fetchone()[0]
+            conn.commit()
+            return task_id
+
+
+def get_tasks(group_code, user_name):
+    """Получает все задачи для группы и пользователя."""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("""
+                SELECT t.id, t.title, t.description, t.deadline, t.user_name FROM tasks t
+                JOIN groups g ON t.group_id = g.id
+                WHERE g.code = %s AND t.user_name = %s
+                ORDER BY t.deadline ASC;
+            """, (group_code, user_name))
+            return [(task['id'], task['title'], task['description'],
+                    task['deadline'], task['user_name']) for task in cursor.fetchall()]
+
+
+def delete_task(task_id):
+    """Удаляет задачу по ID."""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM tasks WHERE id = %s;", (task_id,))
+            conn.commit()

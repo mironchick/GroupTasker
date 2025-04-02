@@ -2,7 +2,8 @@ from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayo
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 from note_board import NoteBoard
-from group_view import GroupView  # Добавлен новый импорт
+from group_view import GroupView
+from task_board import TaskBoard  # Импорт новой вкладки задач
 
 
 class MainWindow(QWidget):
@@ -85,23 +86,25 @@ class MainWindow(QWidget):
         btn_chat = create_menu_button("Общий чат")
         btn_messages = create_menu_button("Личные сообщения")
 
-        # Создаем stacked widget для переключения между GroupView и NoteBoard
+        # Создаем stacked widget для переключения между вкладками
         self.content_stack = QStackedWidget()
 
-        # Создаем оба виджета
+        # Создаем все виджеты
+        self.group_view = GroupView(self.group_code, self)
         self.note_board = NoteBoard(self.group_code, self.user_name)
-        self.group_view = GroupView(self.group_code, self)  # Передаем self как main_window
+        self.task_board = TaskBoard(self.group_code, self.user_name)  # Новая вкладка задач
 
         # Добавляем их в stacked widget
-        self.content_stack.addWidget(self.group_view)
-        self.content_stack.addWidget(self.note_board)
+        self.content_stack.addWidget(self.group_view)    # Индекс 0 - Группа
+        self.content_stack.addWidget(self.note_board)   # Индекс 1 - Доска заметок
+        self.content_stack.addWidget(self.task_board)   # Индекс 2 - Мои задачи
 
-        # По умолчанию показываем NoteBoard
+        # По умолчанию показываем доску заметок (как было раньше)
         self.content_stack.setCurrentIndex(1)
 
         # Подключаем кнопки меню
-        btn_group.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))
-        btn_tasks.clicked.connect(lambda: self.content_stack.setCurrentIndex(1))
+        btn_group.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))  # Группа
+        btn_tasks.clicked.connect(lambda: self.content_stack.setCurrentIndex(2))  # Теперь открывает задачи
 
         menu_layout.addWidget(btn_group)
         menu_layout.addWidget(btn_tasks)
