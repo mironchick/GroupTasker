@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (QWidget, QLabel, QPushButton, QVBoxLayout,
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt, QDate
 from database import save_task, get_tasks, delete_task
+from datetime import date
 
 
 class TaskBoard(QFrame):
@@ -150,22 +151,51 @@ class TaskBoard(QFrame):
         description_label.setContentsMargins(10, 0, 0, 0)
         task_layout.addWidget(description_label)
 
-        # Дедлайн и автор
+        # Дедлайн и оставшееся время
         footer_layout = QHBoxLayout()
 
-        # Дедлайн
-        deadline_label = QLabel(f"Дедлайн: {deadline}")
+        # Преобразуем дедлайн в строку, если он в формате datetime.date
+        if isinstance(deadline, date):
+            deadline_str = deadline.strftime("%d.%m.%Y")  # Преобразуем в строку нужного формата
+        else:
+            deadline_str = str(deadline)
+
+        deadline_label = QLabel(f"Дедлайн: {deadline_str}")
         deadline_label.setFont(QFont("Inter", 12))
         deadline_label.setStyleSheet("color: #5F7470;")
         footer_layout.addWidget(deadline_label)
 
         footer_layout.addStretch()
 
-        # Автор
-        user_label = QLabel(f"Автор: {user_name}")
-        user_label.setFont(QFont("Inter", 12))
-        user_label.setStyleSheet("color: #5F7470; font-style: italic;")
-        footer_layout.addWidget(user_label)
+        # Оставшееся время
+        try:
+            deadline_date = QDate.fromString(deadline_str, "dd.MM.yyyy")
+
+            if not deadline_date.isValid():
+                raise ValueError("Неправильный формат даты")
+
+            current_date = QDate.currentDate()
+            days_left = current_date.daysTo(deadline_date)
+
+            if days_left > 0:
+                time_left_text = f"Осталось дней: {days_left}"
+                time_left_color = "#5F7470"  # Зеленый
+            elif days_left == 0:
+                time_left_text = "Дедлайн сегодня!"
+                time_left_color = "#FFA500"  # Оранжевый
+            else:
+                time_left_text = "Просрочено!"
+                time_left_color = "#FF6961"  # Красный
+
+        except Exception as e:
+            print(f"Ошибка при обработке дедлайна: {e}")
+            time_left_text = "Ошибка даты"
+            time_left_color = "#FF0000"
+
+        time_left_label = QLabel(time_left_text)
+        time_left_label.setFont(QFont("Inter", 12))
+        time_left_label.setStyleSheet(f"color: {time_left_color}; font-style: italic;")
+        footer_layout.addWidget(time_left_label)
 
         # Кнопка удаления
         btn_delete = QPushButton("❌")
