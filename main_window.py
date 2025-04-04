@@ -92,7 +92,7 @@ class MainWindow(QWidget):
         # Создаем все виджеты
         self.group_view = GroupView(self.group_code, self)
         self.note_board = NoteBoard(self.group_code, self.user_name)
-        self.task_board = TaskBoard(self.group_code, self.user_name)  # Новая вкладка задач
+        self.task_board = TaskBoard(self.group_code, self.user_name, self) # Новая вкладка задач
 
         # Добавляем их в stacked widget
         self.content_stack.addWidget(self.group_view)    # Индекс 0 - Группа

@@ -7,10 +7,11 @@ from database import save_task, get_tasks, delete_task
 
 
 class TaskBoard(QFrame):
-    def __init__(self, group_code, user_name=None):
+    def __init__(self, group_code, user_name=None, main_window=None):
         super().__init__()
         self.group_code = group_code
         self.user_name = user_name
+        self.main_window = main_window  # Сохраняем ссылку на главное окно
         self.setFixedSize(1000, 900)
         self.setStyleSheet("""
             border: 2px solid #5F7470; 
@@ -19,25 +20,75 @@ class TaskBoard(QFrame):
         """)
 
         # Основной layout
-        self.main_layout = QVBoxLayout(self)
-        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        main_layout = QVBoxLayout(self)
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(20, 20, 20, 20)
 
-        # Кнопка добавления задачи
+        # Верхняя строка с элементами
+        top_row = QHBoxLayout()
+        top_row.setSpacing(20)
+
+        # Надпись "Мои задачи" слева
+        tasks_label = QLabel("Мои задачи")
+        tasks_label.setFixedSize(200, 70)
+        tasks_label.setStyleSheet("""
+            background-color: #E0E2DB;
+            border-radius: 15px;
+            padding: 10px;
+            color: #003C30;
+        """)
+        tasks_label.setFont(QFont("Inter", 24))
+        tasks_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        top_row.addWidget(tasks_label)
+
+        # Растягивающий элемент
+        top_row.addStretch()
+
+        # Кнопка добавления задачи (по центру)
         btn_add_task = QPushButton("Добавить задачу")
-        btn_add_task.setFont(QFont("Inter", 24))
+        btn_add_task.setFixedSize(300, 70)
         btn_add_task.setStyleSheet("""
             QPushButton {
-                background-color: #E0E2DB; 
-                color: #003C30; 
-                border-radius: 10px; 
+                background-color: #E0E2DB;
+                border-radius: 15px;
                 padding: 10px;
+                font-size: 24px;
+                color: #003C30;
+                border: none;
             }
-            QPushButton:hover { 
-                background-color: #D0D2C8; 
+            QPushButton:hover {
+                background-color: #D2D4C8;
             }
         """)
+        btn_add_task.setFont(QFont("Inter", 24))
         btn_add_task.clicked.connect(self.add_task)
-        self.main_layout.addWidget(btn_add_task, alignment=Qt.AlignmentFlag.AlignCenter)
+        top_row.addWidget(btn_add_task)
+
+        # Растягивающий элемент
+        top_row.addStretch()
+
+        # Кнопка Home справа
+        btn_home = QPushButton("Home")
+        btn_home.setFixedSize(150, 70)
+        btn_home.setStyleSheet("""
+            QPushButton {
+                background-color: #E0E2DB;
+                border-radius: 15px;
+                padding: 10px;
+                font-size: 24px;
+                color: #003C30;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #D2D4C8;
+            }
+        """)
+        btn_home.setFont(QFont("Inter", 24))
+        btn_home.clicked.connect(self.show_note_board)
+        top_row.addWidget(btn_home)
+
+        main_layout.addLayout(top_row)
 
         # Область с задачами с прокруткой
         self.scroll_area = QScrollArea()
@@ -50,10 +101,15 @@ class TaskBoard(QFrame):
         self.tasks_layout.setSpacing(10)
 
         self.scroll_area.setWidget(self.tasks_container)
-        self.main_layout.addWidget(self.scroll_area)
+        main_layout.addWidget(self.scroll_area)
 
         # Загружаем существующие задачи
         self.load_tasks()
+
+    def show_note_board(self):
+        """Переключает на доску заметок"""
+        if self.main_window and hasattr(self.main_window, 'content_stack'):
+            self.main_window.content_stack.setCurrentIndex(1)
 
     def load_tasks(self):
         """Загружает задачи из базы данных."""
