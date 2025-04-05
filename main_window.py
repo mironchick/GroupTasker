@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt
 from note_board import NoteBoard
 from group_view import GroupView
 from task_board import TaskBoard  # Импорт новой вкладки задач
+from group_chat import GroupChat
 
 
 class MainWindow(QWidget):
@@ -93,11 +94,13 @@ class MainWindow(QWidget):
         self.group_view = GroupView(self.group_code, self)
         self.note_board = NoteBoard(self.group_code, self.user_name)
         self.task_board = TaskBoard(self.group_code, self.user_name, self) # Новая вкладка задач
+        self.group_chat = GroupChat(self.group_code, self.user_name, self)
 
         # Добавляем их в stacked widget
         self.content_stack.addWidget(self.group_view)    # Индекс 0 - Группа
         self.content_stack.addWidget(self.note_board)   # Индекс 1 - Доска заметок
         self.content_stack.addWidget(self.task_board)   # Индекс 2 - Мои задачи
+        self.content_stack.addWidget(self.group_chat)  # Индекс 3 - Общий чат
 
         # По умолчанию показываем доску заметок (как было раньше)
         self.content_stack.setCurrentIndex(1)
@@ -105,6 +108,7 @@ class MainWindow(QWidget):
         # Подключаем кнопки меню
         btn_group.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))  # Группа
         btn_tasks.clicked.connect(lambda: self.content_stack.setCurrentIndex(2))  # Теперь открывает задачи
+        btn_chat.clicked.connect(lambda: self.content_stack.setCurrentIndex(3))  # Чат
 
         menu_layout.addWidget(btn_group)
         menu_layout.addWidget(btn_tasks)

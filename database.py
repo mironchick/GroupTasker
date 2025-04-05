@@ -163,3 +163,34 @@ def delete_task(task_id):
         with conn.cursor() as cursor:
             cursor.execute("DELETE FROM tasks WHERE id = %s;", (task_id,))
             conn.commit()
+
+
+def save_message(group_code, user_name, message):
+    """Сохраняет сообщение в чате."""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            # Получаем ID группы по коду
+            cursor.execute("SELECT id FROM groups WHERE code = %s;", (group_code,))
+            group_id = cursor.fetchone()[0]
+
+            cursor.execute("""
+                INSERT INTO group_messages (group_id, user_name, message) 
+                VALUES (%s, %s, %s) RETURNING id;
+            """, (group_id, user_name, message))
+            message_id = cursor.fetchone()[0]
+            conn.commit()
+            return message_id
+
+
+def get_messages(group_code, last_message_id=0):
+    """Получает все сообщения для группы, начиная с указанного ID."""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("""
+                SELECT m.id, m.user_name, m.message, m.created_at FROM group_messages m
+                JOIN groups g ON m.group_id = g.id
+                WHERE g.code = %s AND m.id > %s
+                ORDER BY m.created_at ASC;
+            """, (group_code, last_message_id))
+            return [(msg['id'], msg['user_name'], msg['message'],
+                    msg['created_at']) for msg in cursor.fetchall()]
