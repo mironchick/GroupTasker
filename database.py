@@ -194,3 +194,37 @@ def get_messages(group_code, last_message_id=0):
             """, (group_code, last_message_id))
             return [(msg['id'], msg['user_name'], msg['message'],
                     msg['created_at']) for msg in cursor.fetchall()]
+
+
+def delete_message(message_id):
+    """Удаляет сообщение по ID."""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM group_messages WHERE id = %s;", (message_id,))
+            conn.commit()
+
+
+def get_last_message_id(group_code):
+    """Возвращает ID последнего сообщения в группе."""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("""
+                SELECT MAX(m.id) as last_id FROM group_messages m
+                JOIN groups g ON m.group_id = g.id
+                WHERE g.code = %s;
+            """, (group_code,))
+            result = cursor.fetchone()
+            return result['last_id'] if result['last_id'] else 0
+
+
+def get_message_count(group_code):
+    """Возвращает количество сообщений в группе"""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("""
+                SELECT COUNT(*) as count FROM group_messages m
+                JOIN groups g ON m.group_id = g.id
+                WHERE g.code = %s;
+            """, (group_code,))
+            result = cursor.fetchone()
+            return result['count'] if result else 0
