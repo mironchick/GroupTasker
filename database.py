@@ -228,3 +228,79 @@ def get_message_count(group_code):
             """, (group_code,))
             result = cursor.fetchone()
             return result['count'] if result else 0
+
+
+def get_group_users(group_code, exclude_user=None):
+    """Получает список пользователей группы, исключая указанного пользователя"""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            query = """
+                SELECT u.name FROM users u
+                JOIN groups g ON u.group_id = g.id
+                WHERE g.code = %s
+            """
+            params = [group_code]
+
+            if exclude_user:
+                query += " AND u.name != %s"
+                params.append(exclude_user)
+
+            query += " ORDER BY u.name;"
+
+            cursor.execute(query, params)
+            return [user['name'] for user in cursor.fetchall()]
+
+
+def save_private_message(group_code, sender, receiver, message):
+    """Сохраняет личное сообщение в базе данных."""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            # Получаем ID группы по коду
+            cursor.execute("SELECT id FROM groups WHERE code = %s;", (group_code,))
+            group_id = cursor.fetchone()[0]
+
+            cursor.execute("""
+                INSERT INTO private_messages (group_id, sender, receiver, message) 
+                VALUES (%s, %s, %s, %s) RETURNING id;
+            """, (group_id, sender, receiver, message))
+            message_id = cursor.fetchone()[0]
+            conn.commit()
+            return message_id
+
+
+def get_private_messages(group_code, user1, user2):
+    """Получает личные сообщения между двумя пользователями."""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("""
+                SELECT m.id, m.sender, m.receiver, m.message, m.created_at 
+                FROM private_messages m
+                JOIN groups g ON m.group_id = g.id
+                WHERE g.code = %s AND 
+                ((m.sender = %s AND m.receiver = %s) OR (m.sender = %s AND m.receiver = %s))
+                ORDER BY m.created_at ASC;
+            """, (group_code, user1, user2, user2, user1))
+            return [(msg['id'], msg['sender'], msg['receiver'],
+                     msg['message'], msg['created_at']) for msg in cursor.fetchall()]
+
+
+def delete_private_message(message_id):
+    """Удаляет личное сообщение по ID."""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM private_messages WHERE id = %s;", (message_id,))
+            conn.commit()
+
+
+def get_private_message_count(group_code, user1, user2):
+    """Возвращает количество личных сообщений между пользователями."""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("""
+                SELECT COUNT(*) as count FROM private_messages m
+                JOIN groups g ON m.group_id = g.id
+                WHERE g.code = %s AND 
+                ((m.sender = %s AND m.receiver = %s) OR (m.sender = %s AND m.receiver = %s));
+            """, (group_code, user1, user2, user2, user1))
+            result = cursor.fetchone()
+            return result['count'] if result else 0

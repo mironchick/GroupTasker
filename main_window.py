@@ -5,6 +5,7 @@ from note_board import NoteBoard
 from group_view import GroupView
 from task_board import TaskBoard  # Импорт новой вкладки задач
 from group_chat import GroupChat
+from personal_chat import PersonalChat
 
 
 class MainWindow(QWidget):
@@ -95,12 +96,14 @@ class MainWindow(QWidget):
         self.note_board = NoteBoard(self.group_code, self.user_name)
         self.task_board = TaskBoard(self.group_code, self.user_name, self) # Новая вкладка задач
         self.group_chat = GroupChat(self.group_code, self.user_name, self)
+        self.personal_chat = PersonalChat(self.group_code, self.user_name, self)
 
         # Добавляем их в stacked widget
         self.content_stack.addWidget(self.group_view)    # Индекс 0 - Группа
         self.content_stack.addWidget(self.note_board)   # Индекс 1 - Доска заметок
         self.content_stack.addWidget(self.task_board)   # Индекс 2 - Мои задачи
         self.content_stack.addWidget(self.group_chat)  # Индекс 3 - Общий чат
+        self.content_stack.addWidget(self.personal_chat)  # Индекс 4 - Личные сообщения
 
         # По умолчанию показываем доску заметок (как было раньше)
         self.content_stack.setCurrentIndex(1)
@@ -109,6 +112,7 @@ class MainWindow(QWidget):
         btn_group.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))  # Группа
         btn_tasks.clicked.connect(lambda: self.content_stack.setCurrentIndex(2))  # Теперь открывает задачи
         btn_chat.clicked.connect(lambda: self.content_stack.setCurrentIndex(3))  # Чат
+        btn_messages.clicked.connect(lambda: self.content_stack.setCurrentIndex(4))  # Личные сообщения
 
         menu_layout.addWidget(btn_group)
         menu_layout.addWidget(btn_tasks)
