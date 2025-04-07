@@ -34,7 +34,7 @@ class PersonalChat(QFrame):
         top_row.setSpacing(20)
 
         chat_label = QLabel("Личные сообщения")
-        chat_label.setFixedSize(200, 70)
+        chat_label.setFixedSize(350, 70)
         chat_label.setStyleSheet("""
             background-color: #E0E2DB;
             border-radius: 15px;
@@ -267,12 +267,33 @@ class PersonalChat(QFrame):
         self.check_updates(force=True)
 
     def delete_message(self, msg_id):
-        reply = QMessageBox.question(
-            self, 'Подтверждение',
-            'Вы уверены, что хотите удалить это сообщение?',
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle('Подтверждение')
+        msg_box.setText('Вы уверены, что хотите удалить это сообщение?')
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg_box.setDefaultButton(QMessageBox.StandardButton.No)
+
+        # Устанавливаем светлый стиль
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                background-color: #F0F0F0;
+            }
+            QLabel {
+                color: #003C30;
+            }
+            QPushButton {
+                background-color: #E0E2DB;
+                color: #003C30;
+                border-radius: 5px;
+                padding: 5px 10px;
+                min-width: 80px;
+            }
+            QPushButton:hover {
+                background-color: #D2D4C8;
+            }
+        """)
+
+        reply = msg_box.exec()
 
         if reply == QMessageBox.StandardButton.Yes:
             delete_private_message(msg_id)

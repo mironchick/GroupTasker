@@ -272,6 +272,20 @@ class TaskDialog(QDialog):
             QPushButton:hover {
                 background-color: #4D615E;
             }
+            QCalendarWidget QWidget {
+                background-color: #F0F0F0;
+                color: #003C30;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #E0E2DB;
+                color: #003C30;
+            }
+            QCalendarWidget QMenu {
+                background-color: #F0F0F0;
+            }
+            QCalendarWidget QSpinBox {
+                background-color: white;
+            }
         """)
 
         layout = QVBoxLayout(self)
@@ -292,6 +306,35 @@ class TaskDialog(QDialog):
         self.deadline_input = QDateEdit()
         self.deadline_input.setDate(QDate.currentDate().addDays(7))
         self.deadline_input.setCalendarPopup(True)
+
+        # Дополнительная стилизация календаря
+        calendar = self.deadline_input.calendarWidget()
+        calendar.setFixedSize(300, 200)  # Увеличил размер календаря
+        calendar.setStyleSheet("""
+            QCalendarWidget {
+                background-color: #F0F0F0;
+                color: #003C30;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #E0E2DB;
+                color: #003C30;
+                font-size: 14px;
+            }
+            QCalendarWidget QMenu {
+                background-color: #F0F0F0;
+            }
+            QCalendarWidget QSpinBox {
+                background-color: white;
+                color: #003C30;
+            }
+            QCalendarWidget QAbstractItemView:enabled {
+                background-color: white;
+                color: #003C30;
+                selection-background-color: #5F7470;
+                selection-color: white;
+            }
+        """)
+
         form_layout.addRow("Дедлайн:", self.deadline_input)
 
         layout.addLayout(form_layout)
