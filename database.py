@@ -304,3 +304,29 @@ def get_private_message_count(group_code, user1, user2):
             """, (group_code, user1, user2, user2, user1))
             result = cursor.fetchone()
             return result['count'] if result else 0
+
+
+def check_user_exists_in_group(name, group_code):
+    """Проверяет, существует ли пользователь с таким именем в группе, без проверки пароля."""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("""
+                SELECT u.id FROM users u
+                JOIN groups g ON u.group_id = g.id
+                WHERE u.name = %s AND g.code = %s;
+            """, (name, group_code))
+            user = cursor.fetchone()
+            return user is not None
+
+
+def verify_user_password(name, password, group_code):
+    """Проверяет, соответствует ли пароль пользователю в группе."""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("""
+                SELECT u.id FROM users u
+                JOIN groups g ON u.group_id = g.id
+                WHERE u.name = %s AND u.password = %s AND g.code = %s;
+            """, (name, password, group_code))
+            user = cursor.fetchone()
+            return user is not None

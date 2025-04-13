@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QMessageBox
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
-from database import check_group_exists, check_user_exists, add_user_to_group
+from database import check_group_exists, check_user_exists, add_user_to_group, check_user_exists_in_group, verify_user_password
 from main_window import MainWindow
 
 
@@ -92,7 +92,16 @@ class GroupJoinWindow(QWidget):
             QMessageBox.warning(self, "Ошибка", "Код группы введён неверно")
             return
 
-        if not check_user_exists(user_name, password, group_code):
+        # Проверяем, существует ли пользователь с таким именем в группе
+        user_exists = check_user_exists_in_group(user_name, group_code)
+        if user_exists:
+            # Если пользователь существует, проверяем пароль
+            password_correct = verify_user_password(user_name, password, group_code)
+            if not password_correct:
+                QMessageBox.warning(self, "Ошибка", "Неверный пароль для существующего пользователя")
+                return
+        else:
+            # Если пользователя нет, добавляем его
             add_user_to_group(user_name, password, group_code)
 
         QMessageBox.information(self, "Успех", "Вы успешно вошли в группу")
