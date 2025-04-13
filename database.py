@@ -330,3 +330,28 @@ def verify_user_password(name, password, group_code):
             """, (name, password, group_code))
             user = cursor.fetchone()
             return user is not None
+
+
+def is_group_creator(user_name, group_code):
+    """Проверяет, является ли пользователь создателем группы."""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("""
+                SELECT u.id FROM users u
+                JOIN groups g ON u.group_id = g.id
+                WHERE g.code = %s
+                ORDER BY u.id LIMIT 1;
+            """, (group_code,))
+            first_user = cursor.fetchone()
+
+            if first_user:
+                cursor.execute("""
+                    SELECT id FROM users 
+                    WHERE name = %s AND group_id = (
+                        SELECT id FROM groups WHERE code = %s
+                    );
+                """, (user_name, group_code))
+                current_user = cursor.fetchone()
+
+                return current_user and current_user['id'] == first_user['id']
+            return False

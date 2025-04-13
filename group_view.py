@@ -127,6 +127,29 @@ class GroupView(QFrame):
         self.btn_remove_member.clicked.connect(self.remove_member)
         main_layout.addWidget(self.btn_remove_member)
 
+        # Кнопка выхода из группы
+        self.btn_leave_group = QPushButton("Покинуть группу")
+        self.btn_leave_group.setFixedHeight(60)
+        self.btn_leave_group.setStyleSheet("""
+            QPushButton {
+                background-color: #FF6961;
+                border-radius: 15px;
+                padding: 10px;
+                font-size: 20px;
+                color: white;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #D9534F;
+            }
+            QPushButton:disabled {
+                background-color: #5F7470;
+            }
+        """)
+        self.btn_leave_group.setFont(QFont("Inter", 20))
+        self.btn_leave_group.clicked.connect(self.leave_group)
+        main_layout.addWidget(self.btn_leave_group)
+
         # Кнопка удаления группы
         self.btn_delete_group = QPushButton("Удалить группу")
         self.btn_delete_group.setFixedHeight(60)
@@ -181,9 +204,10 @@ class GroupView(QFrame):
                     self.group_name_label.setText(group_info['name'])
                     self.is_creator = (group_info['creator'] == self.main_window.user_name)
 
-                    # Активируем кнопки только для создателя группы
+                    # Активируем кнопки в зависимости от роли пользователя
                     self.btn_remove_member.setEnabled(self.is_creator)
                     self.btn_delete_group.setEnabled(self.is_creator)
+                    self.btn_leave_group.setEnabled(not self.is_creator)  # Отключаем для создателя
 
                 # Получаем список участников
                 cursor.execute("""
@@ -248,6 +272,42 @@ class GroupView(QFrame):
 
             except Exception as e:
                 QMessageBox.critical(self, "Ошибка", f"Не удалось исключить участника: {str(e)}")
+            finally:
+                if conn:
+                    conn.close()
+
+    def leave_group(self):
+        """Позволяет пользователю покинуть группу."""
+        reply = QMessageBox.question(
+            self, 'Подтверждение',
+            'Вы уверены, что хотите покинуть группу?',
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                conn = psycopg2.connect(
+                    dbname="grouptasker",
+                    user="postgres",
+                    password="123456",
+                    host="localhost"
+                )
+                with conn.cursor() as cursor:
+                    # Удаляем текущего пользователя из группы
+                    cursor.execute("""
+                        DELETE FROM users 
+                        WHERE name = %s AND group_id = (
+                            SELECT id FROM groups WHERE code = %s
+                        );
+                    """, (self.main_window.user_name, self.group_code))
+                    conn.commit()
+
+                    QMessageBox.information(self, "Успех", "Вы покинули группу")
+                    self.main_window.on_back_click(None)  # Возвращаемся в главное меню
+
+            except Exception as e:
+                QMessageBox.critical(self, "Ошибка", f"Не удалось покинуть группу: {str(e)}")
             finally:
                 if conn:
                     conn.close()
