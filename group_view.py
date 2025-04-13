@@ -207,7 +207,7 @@ class GroupView(QFrame):
                     # Активируем кнопки в зависимости от роли пользователя
                     self.btn_remove_member.setEnabled(self.is_creator)
                     self.btn_delete_group.setEnabled(self.is_creator)
-                    self.btn_leave_group.setEnabled(not self.is_creator)  # Отключаем для создателя
+                    self.btn_leave_group.setEnabled(not self.is_creator)
 
                 # Получаем список участников
                 cursor.execute("""
@@ -223,7 +223,19 @@ class GroupView(QFrame):
                     self.members_list.addItem(item)
 
         except Exception as e:
-            print(f"Ошибка при загрузке данных группы: {e}")
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Icon.Critical)
+            msg.setWindowTitle("Ошибка")
+            msg.setText(f"Ошибка при загрузке данных группы: {e}")
+            msg.setStyleSheet("""
+                QMessageBox {
+                    background-color: #F0F0F0;
+                }
+                QLabel {
+                    color: #003C30;
+                }
+            """)
+            msg.exec()
         finally:
             if conn:
                 conn.close()
@@ -232,22 +244,54 @@ class GroupView(QFrame):
         """Удаляет выбранного участника из группы."""
         selected_items = self.members_list.selectedItems()
         if not selected_items:
-            QMessageBox.warning(self, "Ошибка", "Выберите участника для исключения")
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setWindowTitle("Ошибка")
+            msg.setText("Выберите участника для исключения")
+            msg.setStyleSheet("""
+                QMessageBox {
+                    background-color: #F0F0F0;
+                }
+                QLabel {
+                    color: #003C30;
+                }
+            """)
+            msg.exec()
             return
 
         member_name = selected_items[0].text()
         if member_name == self.main_window.user_name:
-            QMessageBox.warning(self, "Ошибка", "Вы не можете исключить себя")
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setWindowTitle("Ошибка")
+            msg.setText("Вы не можете исключить себя")
+            msg.setStyleSheet("""
+                QMessageBox {
+                    background-color: #F0F0F0;
+                }
+                QLabel {
+                    color: #003C30;
+                }
+            """)
+            msg.exec()
             return
 
-        reply = QMessageBox.question(
-            self, 'Подтверждение',
-            f'Вы уверены, что хотите исключить участника {member_name}?',
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle('Подтверждение')
+        msg.setText(f'Вы уверены, что хотите исключить участника {member_name}?')
+        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QMessageBox.StandardButton.No)
+        msg.setStyleSheet("""
+            QMessageBox {
+                background-color: #F0F0F0;
+            }
+            QLabel {
+                color: #003C30;
+            }
+        """)
 
-        if reply == QMessageBox.StandardButton.Yes:
+        if msg.exec() == QMessageBox.StandardButton.Yes:
             try:
                 conn = psycopg2.connect(
                     dbname="grouptasker",
@@ -256,7 +300,6 @@ class GroupView(QFrame):
                     host="localhost"
                 )
                 with conn.cursor() as cursor:
-                    # Удаляем участника
                     cursor.execute("""
                         DELETE FROM users 
                         WHERE name = %s AND group_id = (
@@ -265,27 +308,58 @@ class GroupView(QFrame):
                     """, (member_name, self.group_code))
                     conn.commit()
 
-                    # Обновляем список участников
                     self.load_group_data()
 
-                    QMessageBox.information(self, "Успех", f"Участник {member_name} исключен")
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Icon.Information)
+                    msg.setWindowTitle("Успех")
+                    msg.setText(f"Участник {member_name} исключен")
+                    msg.setStyleSheet("""
+                        QMessageBox {
+                            background-color: #F0F0F0;
+                        }
+                        QLabel {
+                            color: #003C30;
+                        }
+                    """)
+                    msg.exec()
 
             except Exception as e:
-                QMessageBox.critical(self, "Ошибка", f"Не удалось исключить участника: {str(e)}")
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Icon.Critical)
+                msg.setWindowTitle("Ошибка")
+                msg.setText(f"Не удалось исключить участника: {str(e)}")
+                msg.setStyleSheet("""
+                    QMessageBox {
+                        background-color: #F0F0F0;
+                    }
+                    QLabel {
+                        color: #003C30;
+                    }
+                """)
+                msg.exec()
             finally:
                 if conn:
                     conn.close()
 
     def leave_group(self):
         """Позволяет пользователю покинуть группу."""
-        reply = QMessageBox.question(
-            self, 'Подтверждение',
-            'Вы уверены, что хотите покинуть группу?',
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle('Подтверждение')
+        msg.setText('Вы уверены, что хотите покинуть группу?')
+        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QMessageBox.StandardButton.No)
+        msg.setStyleSheet("""
+            QMessageBox {
+                background-color: #F0F0F0;
+            }
+            QLabel {
+                color: #003C30;
+            }
+        """)
 
-        if reply == QMessageBox.StandardButton.Yes:
+        if msg.exec() == QMessageBox.StandardButton.Yes:
             try:
                 conn = psycopg2.connect(
                     dbname="grouptasker",
@@ -294,7 +368,6 @@ class GroupView(QFrame):
                     host="localhost"
                 )
                 with conn.cursor() as cursor:
-                    # Удаляем текущего пользователя из группы
                     cursor.execute("""
                         DELETE FROM users 
                         WHERE name = %s AND group_id = (
@@ -303,25 +376,58 @@ class GroupView(QFrame):
                     """, (self.main_window.user_name, self.group_code))
                     conn.commit()
 
-                    QMessageBox.information(self, "Успех", "Вы покинули группу")
-                    self.main_window.on_back_click(None)  # Возвращаемся в главное меню
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Icon.Information)
+                    msg.setWindowTitle("Успех")
+                    msg.setText("Вы покинули группу")
+                    msg.setStyleSheet("""
+                        QMessageBox {
+                            background-color: #F0F0F0;
+                        }
+                        QLabel {
+                            color: #003C30;
+                        }
+                    """)
+                    msg.exec()
+
+                    self.main_window.on_back_click(None)
 
             except Exception as e:
-                QMessageBox.critical(self, "Ошибка", f"Не удалось покинуть группу: {str(e)}")
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Icon.Critical)
+                msg.setWindowTitle("Ошибка")
+                msg.setText(f"Не удалось покинуть группу: {str(e)}")
+                msg.setStyleSheet("""
+                    QMessageBox {
+                        background-color: #F0F0F0;
+                    }
+                    QLabel {
+                        color: #003C30;
+                    }
+                """)
+                msg.exec()
             finally:
                 if conn:
                     conn.close()
 
     def delete_group(self):
         """Удаляет группу полностью."""
-        reply = QMessageBox.question(
-            self, 'Подтверждение',
-            'Вы уверены, что хотите удалить группу? Это действие нельзя отменить!',
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle('Подтверждение')
+        msg.setText('Вы уверены, что хотите удалить группу? Это действие нельзя отменить!')
+        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QMessageBox.StandardButton.No)
+        msg.setStyleSheet("""
+            QMessageBox {
+                background-color: #F0F0F0;
+            }
+            QLabel {
+                color: #003C30;
+            }
+        """)
 
-        if reply == QMessageBox.StandardButton.Yes:
+        if msg.exec() == QMessageBox.StandardButton.Yes:
             try:
                 conn = psycopg2.connect(
                     dbname="grouptasker",
@@ -330,15 +436,39 @@ class GroupView(QFrame):
                     host="localhost"
                 )
                 with conn.cursor() as cursor:
-                    # Удаляем группу (каскадное удаление удалит всех пользователей и заметки)
                     cursor.execute("DELETE FROM groups WHERE code = %s;", (self.group_code,))
                     conn.commit()
 
-                    QMessageBox.information(self, "Успех", "Группа удалена")
-                    self.main_window.on_back_click(None)  # Возвращаемся в главное меню
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Icon.Information)
+                    msg.setWindowTitle("Успех")
+                    msg.setText("Группа удалена")
+                    msg.setStyleSheet("""
+                        QMessageBox {
+                            background-color: #F0F0F0;
+                        }
+                        QLabel {
+                            color: #003C30;
+                        }
+                    """)
+                    msg.exec()
+
+                    self.main_window.on_back_click(None)
 
             except Exception as e:
-                QMessageBox.critical(self, "Ошибка", f"Не удалось удалить группу: {str(e)}")
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Icon.Critical)
+                msg.setWindowTitle("Ошибка")
+                msg.setText(f"Не удалось удалить группу: {str(e)}")
+                msg.setStyleSheet("""
+                    QMessageBox {
+                        background-color: #F0F0F0;
+                    }
+                    QLabel {
+                        color: #003C30;
+                    }
+                """)
+                msg.exec()
             finally:
                 if conn:
                     conn.close()
