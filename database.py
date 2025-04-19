@@ -355,3 +355,12 @@ def is_group_creator(user_name, group_code):
 
                 return current_user and current_user['id'] == first_user['id']
             return False
+
+
+def get_note_author(note_id):
+    """Получает имя автора заметки по её ID."""
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("SELECT user_name FROM notes WHERE id = %s;", (note_id,))
+            note = cursor.fetchone()
+            return note['user_name'] if note else None

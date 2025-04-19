@@ -1,15 +1,15 @@
 from PyQt6.QtWidgets import (QWidget, QLabel, QPushButton, QVBoxLayout,
-                             QHBoxLayout, QFrame, QInputDialog, QScrollArea)
+                             QHBoxLayout, QFrame, QInputDialog, QScrollArea, QMessageBox)
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
-from database import save_note, get_notes, delete_note
+from database import save_note, get_notes, delete_note, get_note_author
 
 
 class NoteBoard(QFrame):
-    def __init__(self, group_code, user_name=None):  # Добавляем параметр user_name
+    def __init__(self, group_code, user_name=None):
         super().__init__()
         self.group_code = group_code
-        self.user_name = user_name  # Сохраняем имя пользователя
+        self.user_name = user_name
         self.setFixedSize(1000, 900)
         self.setStyleSheet("""
             border: 2px solid #5F7470; 
@@ -76,7 +76,7 @@ class NoteBoard(QFrame):
         """)
         note_frame.setFixedWidth(950)
 
-        note_layout = QVBoxLayout(note_frame)  # Изменено на вертикальный layout
+        note_layout = QVBoxLayout(note_frame)
 
         # Основной текст заметки
         note_text = QLabel(text)
@@ -95,22 +95,23 @@ class NoteBoard(QFrame):
         text_button_layout = QHBoxLayout()
         text_button_layout.addWidget(note_text)
 
-        btn_delete = QPushButton("❌")
-        btn_delete.setStyleSheet("""
-            QPushButton {
-                background-color: #FF6961;
-                color: white;
-                border-radius: 5px;
-                padding: 5px;
-            }
-            QPushButton:hover {
-                background-color: #D9534F;
-            }
-        """)
-        btn_delete.setFixedSize(40, 40)
-        btn_delete.clicked.connect(lambda: self.remove_note(note_id))
-
-        text_button_layout.addWidget(btn_delete)
+        # Создаем кнопку удаления только если текущий пользователь - автор заметки
+        if self.user_name == user_name:
+            btn_delete = QPushButton("❌")
+            btn_delete.setStyleSheet("""
+                QPushButton {
+                    background-color: #FF6961;
+                    color: white;
+                    border-radius: 5px;
+                    padding: 5px;
+                }
+                QPushButton:hover {
+                    background-color: #D9534F;
+                }
+            """)
+            btn_delete.setFixedSize(40, 40)
+            btn_delete.clicked.connect(lambda: self.remove_note(note_id))
+            text_button_layout.addWidget(btn_delete)
 
         note_layout.addLayout(text_button_layout)
         note_layout.addWidget(user_label)
@@ -118,7 +119,7 @@ class NoteBoard(QFrame):
 
     def add_note(self):
         """Добавляет заметку на доску и сохраняет в базу данных."""
-        if not self.user_name:  # Проверяем, есть ли имя пользователя
+        if not self.user_name:
             print("Ошибка: имя пользователя не установлено")
             return
 
@@ -157,12 +158,22 @@ class NoteBoard(QFrame):
         if dialog.exec() == QInputDialog.DialogCode.Accepted:
             text = dialog.textValue()
             if text.strip():
-                # Сохраняем в базу данных и получаем ID заметки
                 note_id = save_note(self.group_code, text, self.user_name)
-                # Добавляем на доску
                 self.add_note_to_board(note_id, text, self.user_name)
 
     def remove_note(self, note_id):
         """Удаляет заметку из базы данных и обновляет доску."""
-        delete_note(note_id)
-        self.load_notes()
+        # Получаем автора заметки
+        author = get_note_author(note_id)
+
+        # Проверяем, является ли текущий пользователь автором
+        if author == self.user_name:
+            delete_note(note_id)
+            self.load_notes()
+        else:
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                "Вы можете удалять только свои заметки!",
+                QMessageBox.StandardButton.Ok
+            )
